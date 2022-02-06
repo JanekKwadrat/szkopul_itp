@@ -62,11 +62,25 @@ class Tree {
     }
 
     int query(int lim){
-        if(d[itr] < lim) return all[itr];
-        else if(ptr0 == nullptr) return 0;
-        else return ptr0->query(lim);
+        int answer = infty;
+        if(d[itr] <= lim){
+            if(ptr0 != nullptr) answer = min(answer, all[ptr0->itr]);
+            if(ptr1 != nullptr) answer = min(answer, ptr1->query(lim));
+        }
+        else if(ptr0 != nullptr) answer = min(answer, ptr0->query(lim));
+        return answer;
     }
-};
+
+    void print(std::string pad = ""){
+        std::cout << pad << itr << "\n";
+        std::string nextpad = "  " + pad;
+        if(ptr0 != nullptr) ptr0->print(nextpad);
+        else std::cout << nextpad << "-\n";
+        if(ptr1 != nullptr) ptr1->print(nextpad);
+        std::cout << nextpad << "-\n";
+    }
+
+} * lemon_tree;
 
 int main(){
     
@@ -78,6 +92,23 @@ int main(){
         std::cin >> k;
 
         ans[n-1] = 0;
+        lemon_tree = new Tree(n-1);
+
+        for(int i = n - 2; i >= 0; --i){
+            int ans_not = lemon_tree->query(d[i]);
+            int ans_can = lemon_tree->query(infty) + 1;
+            ans[i] = min(ans_not, ans_can);
+
+            lemon_tree->add(i);
+            if(i + k < n) lemon_tree->rmv(i + k);
+        }
+
+        std::cout << "############\n";
+        lemon_tree->print();       
+        std::cout << "############\n";
+
+        std::cout << ans[0] << "\n";
+        delete lemon_tree;
     }
 
     return 0;
