@@ -1,14 +1,18 @@
 /* 
- *  Zadanie ptaszek
+ * Zadanie ptaszek (XXI OI, etap II, dzien drugi)
+ * Jan Zakrzewski, rozwiazanie
+ * 
+ * Pomysl: dynamiczne drzewo przedzialowe z programowaniem dynamicznym
+ * (przechowujace wyniki, a segregowane wedlug wysokosci)
  */
 
 #include <iostream>
 
 class Tree {
-    int hold;
-    int size;
-    Tree * ptr0;
-    Tree * ptr1;
+    int hold; // value held in node
+    int size; // number of nodes - this one and all its children
+    Tree * ptr0; // pointer to left subtree
+    Tree * ptr1; // pointer to right subtree
 
     public:
     
