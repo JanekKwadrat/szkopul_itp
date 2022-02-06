@@ -1,3 +1,7 @@
+/* 
+ *  Zadanie ptaszek
+ */
+
 #include <iostream>
 
 class Tree {
@@ -26,6 +30,7 @@ class Tree {
             else wh += ptr1->add(x);
             if(ptr0 != nullptr)
                 wh += ptr0->size;
+            ++wh;
         }
         ++size;
         return wh;
@@ -41,6 +46,7 @@ int main(){
     my_tree->add(4);
     my_tree->add(11);
     std::cout << my_tree->add(7) << "\n";
+    std::cout << my_tree->add(12) << "\n";
     std::cout << "Hello, world!\n";
     return 0;
 }
