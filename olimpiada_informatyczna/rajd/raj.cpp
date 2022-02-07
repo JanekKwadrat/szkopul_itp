@@ -3,7 +3,7 @@
  * Jan Zakrzewski, rozwiazanie
  * 
  * Pomysly: przyporzadkowac kazdemu skrzyzowaniu ile je poprzedza i ile jest po nim,
- * czyli jakas pare [a|b].
+ * czyli jakas pare [a|b]. Trzeba znac dlugosc najlepszego objazdu danego wiezcholka
  * Jak policzyc ile jest objazdow danego skrzyzowania? Moze sprobowac przy liczeniu par [a|b] liczyc druga najlepsza trase?
  */
 
