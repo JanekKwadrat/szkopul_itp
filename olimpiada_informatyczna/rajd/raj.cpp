@@ -241,6 +241,36 @@ int main() {
         mem_top -= max_n;
     }
 
+    {
+        for(int i = 0; i < n; ++i) {
+            if(before[i] + after[i] == longest) continue;
+            int itr = major_before[i] + 1;
+            int jtr = major_after[i] - 1;
+            range_update(itr, jtr, before[i] + after[i]);
+        }
+
+        int * count = &memory[mem_top];
+        mem_top += max_n + 20;
+
+        for(int i = 0; i < n; ++i) {
+            if(before[i] + after[i] != longest) continue;
+            ++count[before[i]];
+        }
+
+        int max_itr = 0;
+
+        for(int i = 0; i < n; ++i) {
+            if(before[i] + after[i] != longest) continue;
+            if(count[before[i]] != 1) continue;
+            if(access(before[i]) < access(before[max_itr])) max_itr = i;
+        }
+
+        std::cout << max_itr + 1 << "\n";
+        std::cout << access(before[max_itr]) << "\n";
+
+        mem_top -= max_n + 20;
+    }
+
     /*range_update(1, 3, 2);
     range_update(2, 4, 3);
     range_update(0, 3, 1);
@@ -268,13 +298,13 @@ int main() {
     std::cout << access(1) << "\n";
     std::cout << access(2) << "\n";*/
 
-    for(int i = 0; i < n; ++i)
+    /*for(int i = 0; i < n; ++i)
         std::cout << "[" << before[i] << "|" << after[i] << "] ";
     std::cout << "\n";
 
     for(int i = 0; i < n; ++i)
         std::cout << "[" << major_before[i] << "|" << major_after[i] << "] ";
-    std::cout << "\n";
+    std::cout << "\n";*/
 
     return 0;
 }
