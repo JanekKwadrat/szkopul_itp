@@ -40,21 +40,87 @@ std::queue<int> think;
 inline int max(int x, int y) { return x > y ? x : y; }
 
 int around[2 * plus]{};
-bool lazy[plus]{};
-int _access(int itr) {
-    int shift;
-    while(true){
-        if(shift < 0) break;
-        if(itr >> shift == 0) continue;
+int lazy[plus]{};
+int access(int itr) {
+    itr += plus;
+    for(int shf = 20; shf >= 1; --shf) {
+        int the_itr = itr >> shf;
+        if(the_itr == 0) continue;
 
-        if(lazy[])
+        if(lazy[the_itr]) {
+            around[the_itr] = max(around[the_itr], lazy[the_itr]);
+            if(the_itr * 2 < plus) {
+                lazy[the_itr * 2] = max(lazy[the_itr * 2], lazy[the_itr]);
+                lazy[the_itr * 2 + 1] = max(lazy[the_itr * 2 + 1], lazy[the_itr]);
+            }
+            else {
+                around[the_itr * 2] = max(around[the_itr * 2], lazy[the_itr]);
+                around[the_itr * 2 + 1] = max(around[the_itr * 2 + 1], lazy[the_itr]);
+            }
+        }
+
+        lazy[the_itr] = 0;
+    }
+    return around[itr];
+}
+
+void range_update(int itr, int jtr, int val) {
+    access(itr);
+    access(jtr);
+
+    itr += plus;
+    jtr += plus;
+
+    while(itr / 2 != jtr / 2) {
+        around[itr] = max(around[itr], val);
+        around[jtr] = max(around[jtr], val);
+
+        if(itr % 2 == 0) {
+            if(itr < plus) lazy[itr + 1] = max(lazy[itr + 1], val);
+            else around[itr + 1] = max(around[itr + 1], val);
+        }
+        if(jtr % 2 == 1) {
+            if(jtr < plus) lazy[jtr - 1] = max(lazy[jtr - 1], val);
+            else around[jtr - 1] = max(around[jtr - 1], val);
+        }
+        itr /= 2;
+        jtr /= 2;
+    }
+    
+    around[itr] = max(around[itr], val);
+    around[jtr] = max(around[jtr], val);
+    itr /= 2;
+
+    while(itr){
+        around[itr] = max(around[itr], val);
+        itr /= 2;
     }
 }
-void update(int itr, int jtr, int val) {
+
+int range_query(int itr, int jtr) {
+    access(itr);
+    access(jtr);
+
     itr += plus;
-    while(itr){
-        
+    jtr += plus;
+
+    int answer = max(around[itr], around[jtr]);
+
+    while(itr / 2 != jtr / 2) {
+        if(itr % 2 == 0) {
+            answer = max(answer, around[itr + 1]);
+            if(itr < plus) answer = max(answer, lazy[itr + 1]);
+        }
+        if(jtr % 2 == 1) {
+            answer = max(answer, around[jtr - 1]);
+            if(jtr < plus) answer = max(answer, lazy[jtr - 1]);
+        }
+
+        itr /= 2;
+        jtr /= 2;
     }
+
+    return answer;
 }
 
 int main() {
@@ -174,6 +240,33 @@ int main() {
 
         mem_top -= max_n;
     }
+
+    /*range_update(1, 3, 2);
+    range_update(2, 4, 3);
+    range_update(0, 3, 1);
+
+    std::cout << access(0) << "\n";
+    std::cout << access(1) << "\n";
+    std::cout << access(2) << "\n";
+    std::cout << access(3) << "\n";
+    std::cout << access(4) << "\n";
+    std::cout << access(5) << "\n\n";
+
+    std::cout << range_query(1, 2) << "\n"; //3
+    std::cout << range_query(0, 1) << "\n"; //2
+    std::cout << range_query(3, 3) << "\n"; //3
+    std::cout << range_query(0, 0) << "\n"; //1
+    std::cout << range_query(3, 7) << "\n"; //3*/
+
+    /*around[plus] = 3;
+    around[plus + 1] = 6;
+    around[plus + 2] = 2;
+    lazy[plus / 2] = 5;
+    lazy[plus / 4] = 4;
+
+    std::cout << access(0) << "\n";
+    std::cout << access(1) << "\n";
+    std::cout << access(2) << "\n";*/
 
     for(int i = 0; i < n; ++i)
         std::cout << "[" << before[i] << "|" << after[i] << "] ";
