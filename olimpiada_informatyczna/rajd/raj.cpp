@@ -17,14 +17,45 @@
 #include <queue>
 
 const int max_n = 5e5 + 20;
+const int plus = 512 * 1024;
 
 int n, m;
-std::set<int> road[max_n]; 
+
+std::set<int> roadmap_forward[max_n]; 
+std::set<int> roadmap_backward[max_n]; 
+
 int before[max_n]{};
 int after[max_n]{};
-int helpful[max_n]{};
+
+int major_before[max_n]{};
+int major_after[max_n]{};
+
+int memory[10 * max_n];
+int mem_top = 0;
+
+int longest = 0;
+
 std::queue<int> think;
-bool seen[max_n]{};
+
+inline int max(int x, int y) { return x > y ? x : y; }
+
+int around[2 * plus]{};
+bool lazy[plus]{};
+int _access(int itr) {
+    int shift;
+    while(true){
+        if(shift < 0) break;
+        if(itr >> shift == 0) continue;
+
+        if(lazy[])
+    }
+}
+void update(int itr, int jtr, int val) {
+    itr += plus;
+    while(itr){
+        
+    }
+}
 
 int main() {
 
@@ -33,24 +64,124 @@ int main() {
         int u, v;
         std::cin >> u >> v;
         --u, --v;
-        road[u].insert(v);
-        ++helpful[v];
+        roadmap_forward[u].insert(v);
+        roadmap_backward[v].insert(u);
     }
 
-    for(int i = 0; i < n; ++i) {
-        if(helpful[i]) continue;
-        if(seen[i]) continue;
+    {
+        int * incoming = &memory[mem_top];
+        mem_top += max_n;
 
-        think.push(i);
+        for(int i = 0; i < n; ++i) {
+            incoming[i] = roadmap_backward[i].size();
+            if(incoming[i] == 0)
+                think.push(i);
+        }
+
         while(!think.empty()) {
-            int brought = think.front();
+            int itr = think.front();
             think.pop();
-
-            for(auto itr : road[brought]) {
-                
+            for(auto jtr : roadmap_forward[itr]) {
+                before[jtr] = max(before[jtr], before[itr] + 1);
+                --incoming[jtr];
+                if(incoming[jtr] == 0)
+                    think.push(jtr);
             }
         }
+
+        mem_top -= max_n;
     }
+
+    {   
+        int * outgoing = &memory[mem_top];
+        mem_top += max_n;
+
+        for(int i = 0; i < n; ++i) {
+            outgoing[i] = roadmap_forward[i].size();
+            if(outgoing[i] == 0)
+                think.push(i);
+        }
+
+        while(!think.empty()) {
+            int itr = think.front();
+            think.pop();
+            for(auto jtr : roadmap_backward[itr]) {
+                after[jtr] = max(after[jtr], after[itr] + 1);
+                --outgoing[jtr];
+                if(outgoing[jtr] == 0)
+                    think.push(jtr);
+            }
+        }
+
+        mem_top -= max_n;
+    }
+
+    for(int i = 0; i < n; ++i)
+        longest = max(longest, before[i] + after[i]);
+
+    {
+        int * incoming = &memory[mem_top];
+        mem_top += max_n;
+
+        for(int i = 0; i < n; ++i) {
+            incoming[i] = roadmap_backward[i].size();
+            if(incoming[i] == 0){
+                think.push(i);
+                if(before[i] + after[i] == longest)
+                    major_before[i] = 1;
+            }
+        }
+
+        while(!think.empty()) {
+            int itr = think.front();
+            think.pop();
+            for(auto jtr : roadmap_forward[itr]) {
+                int inc = before[jtr] + after[jtr] == longest;
+                major_before[jtr] = max(major_before[jtr], major_before[itr] + inc);
+                --incoming[jtr];
+                if(incoming[jtr] == 0)
+                    think.push(jtr);
+            }
+        }
+
+        mem_top -= max_n;
+    }
+
+    {
+        int * outgoing = &memory[mem_top];
+        mem_top += max_n;
+
+        for(int i = 0; i < n; ++i) {
+            outgoing[i] = roadmap_forward[i].size();
+            if(outgoing[i] == 0){
+                think.push(i);
+                if(before[i] + after[i] == longest)
+                    major_after[i] = 1;
+            }
+        }
+
+        while(!think.empty()) {
+            int itr = think.front();
+            think.pop();
+            for(auto jtr : roadmap_backward[itr]) {
+                int inc = before[jtr] + after[jtr] == longest;
+                major_after[jtr] = max(major_after[jtr], major_after[itr] + inc);
+                --outgoing[jtr];
+                if(outgoing[jtr] == 0)
+                    think.push(jtr);
+            }
+        }
+
+        mem_top -= max_n;
+    }
+
+    for(int i = 0; i < n; ++i)
+        std::cout << "[" << before[i] << "|" << after[i] << "] ";
+    std::cout << "\n";
+
+    for(int i = 0; i < n; ++i)
+        std::cout << "[" << major_before[i] << "|" << major_after[i] << "] ";
+    std::cout << "\n";
 
     return 0;
 }
