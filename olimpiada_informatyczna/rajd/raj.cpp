@@ -27,8 +27,8 @@ std::set<int> roadmap_backward[max_n];
 int before[max_n]{};
 int after[max_n]{};
 
-int major_before[max_n]{};
-int major_after[max_n]{};
+int major_before[max_n];
+int major_after[max_n];
 
 int memory[10 * max_n];
 int mem_top = 0;
@@ -38,6 +38,7 @@ int longest = 0;
 std::queue<int> think;
 
 inline int max(int x, int y) { return x > y ? x : y; }
+inline int min(int x, int y) { return x < y ? x : y; }
 
 int around[2 * plus]{};
 int lazy[plus]{};
@@ -124,6 +125,10 @@ int range_query(int itr, int jtr) {
 }
 
 int main() {
+    
+    std::ios_base::sync_with_stdio(0);
+    std::cin.tie(0);
+    std::cout.tie(0);
 
     std::cin >> n >> m;
     for(int i = 0; i < m; ++i) {
@@ -189,6 +194,9 @@ int main() {
         int * incoming = &memory[mem_top];
         mem_top += max_n;
 
+        for(int i = 0; i < n; ++i)
+            major_before[i] = 1e9;
+
         for(int i = 0; i < n; ++i) {
             incoming[i] = roadmap_backward[i].size();
             if(incoming[i] == 0){
@@ -203,7 +211,7 @@ int main() {
             think.pop();
             for(auto jtr : roadmap_forward[itr]) {
                 int inc = before[jtr] + after[jtr] == longest;
-                major_before[jtr] = max(major_before[jtr], major_before[itr] + inc);
+                major_before[jtr] = min(major_before[jtr], major_before[itr] + inc);
                 --incoming[jtr];
                 if(incoming[jtr] == 0)
                     think.push(jtr);
@@ -216,6 +224,9 @@ int main() {
     {
         int * outgoing = &memory[mem_top];
         mem_top += max_n;
+
+        for(int i = 0; i < n; ++i)
+            major_after[i] = 1e9;
 
         for(int i = 0; i < n; ++i) {
             outgoing[i] = roadmap_forward[i].size();
@@ -231,7 +242,7 @@ int main() {
             think.pop();
             for(auto jtr : roadmap_backward[itr]) {
                 int inc = before[jtr] + after[jtr] == longest;
-                major_after[jtr] = max(major_after[jtr], major_after[itr] + inc);
+                major_after[jtr] = min(major_after[jtr], major_after[itr] + inc);
                 --outgoing[jtr];
                 if(outgoing[jtr] == 0)
                     think.push(jtr);
@@ -257,16 +268,17 @@ int main() {
             ++count[before[i]];
         }
 
-        int max_itr = 0;
+        int min_itr = 0;
+        int min_len = longest;
 
         for(int i = 0; i < n; ++i) {
             if(before[i] + after[i] != longest) continue;
             if(count[before[i]] != 1) continue;
-            if(access(before[i]) < access(before[max_itr])) max_itr = i;
+            int maybe_len = max(max(access(before[i]), before[i] - 1), after[i] - 1);
+            if(maybe_len < min_len) min_itr = i;
         }
 
-        std::cout << max_itr + 1 << "\n";
-        std::cout << access(before[max_itr]) << "\n";
+        std::cout << min_itr << " " << min_len << "\n";
 
         mem_top -= max_n + 20;
     }
