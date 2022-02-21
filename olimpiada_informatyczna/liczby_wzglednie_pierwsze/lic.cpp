@@ -48,7 +48,6 @@ ull search(ull x) {
 }
 
 ull gcd(ull x, ull y) {
-    // https://www.tutorialspoint.com/cplusplus-program-to-find-gcd - zmodyfikowane
     if(y == 0) return x;
     else return gcd(y, x % y);
 }
