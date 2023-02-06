@@ -1,99 +1,80 @@
-// Jan Zakrzewski
+/* Jan Zakrzewski
+   XXIX Olimpiada Informatyczna, Etap II
+   Zadanie `Liczby względnie pierwsze (lic)' */
 
-#include <iostream>
-#include <algorithm>
+#include <bits/stdc++.h>
+using namespace std;
 
-typedef unsigned long long ull;
+typedef long long i64;
+i64 n, k;
+int c;
+i64 N;
 
-const ull maxN = 1e14 + 20;
+int P = 0; // liczba n może mieć maksymalnie 12 dzielników pierwszych
+i64 primes[12];
+int M; // = 2 ** P
+i64 numbers[4096]; // products of respective primes
+int mobius[4096];
 
-ull n;
-ull k, c;
-
-const int maxP = 20;
-
-ull primes[maxP];
-int P = 0;
-
-// ile liczb w przedziale [0, m] jest wzglednie pierwszych z n
-ull get_coprime(ull m) {
-    ull answer = 0;
-    int two2P = 1 << P;
-    for(int itr = 0; itr < two2P; ++itr) {
-        ull nmb = 1;
-        ull sgn = 1;
-        for(int j = 0; j < P; ++j) {
-            bool ok = (bool)((itr >> j) & 0x1);
-            if(!ok) continue;
-            nmb *= primes[j];
-            sgn *= -1;
-        }
-        nmb = m / nmb;
-        answer += sgn * nmb;
-    }
-    return answer;
+i64 ile(i64 N) {
+    // ile jest takich 1 <= x <= N, że gcd(x, n) = 1
+    i64 ans = 0;
+    for(i64 i = 0; i < M; ++i)
+        ans += N / numbers[i] * mobius[i];
+    return ans;
 }
 
-//szukamy najwiekszego answer takiego, ze get_coprime(answer) <= x
-//zakladamy, ze w dowolnym momencie get_coprime(p) <= x < get_coprime(q)
-//oraz, ze 0 <= p < q
-ull search(ull x) {
-    ull p = 0, q = maxN * 2, mid;
+i64 znajdz() {
+    // jakie jest najmniejsze N takie, że ile(N) >= k
+    // w każdym momencie ile(p) < k <= ile(q)
+    i64 p = 0, q = 1e18;
     while(q - p > 1) {
-        mid = (p + q) / 2;
-        if(get_coprime(mid) <= x) p = mid;
+        i64 mid = (p + q) / 2;
+        if(ile(mid) < k) p = mid;
         else q = mid;
     }
-    return p;
-}
-
-ull gcd(ull x, ull y) {
-    if(y == 0) return x;
-    else return gcd(y, x % y);
+    return q;
 }
 
 int main() {
 
-    //std::ios_base::sync_with_stdio(0);
-    //std::cin.tie(0);
-    //std::cout.tie(0);
+    ios_base::sync_with_stdio(0);
+    cin.tie(0), cout.tie(0);
 
-    std::cin >> n >> k >> c;
-    //n = 304250263527210LL;
-    //n = 30;
+    cin >> n >> k >> c;
 
-    // wyliczanie dzielnikow pierwszych
-    {
-        ull n0 = n;
-        for(ull d = 2; d * d <= n; ++d) {
-            if(n0 % d) continue;
-            primes[P++] = d;
-            while(n0 % d == 0) n0 /= d;
+    // get prime divisors of the number n
+    i64 nn = n;
+    for(i64 p = 2; p*p <= nn; ++p) {
+        if(nn % p == 0) primes[P++] = p;
+        while(nn % p == 0) nn /= p; 
+    }
+    if(nn > 1) primes[P++] = nn;
+    
+    // get the arrays numbers[] and mobius[]
+    M = 1 << P;
+    for(int i = 0; i < M; ++i) {
+        numbers[i] = 1;
+        mobius[i] = 1;
+    }
+    for(int i = 0; i < P; ++i) {
+        for(int j = 0; j < M; ++j) {
+            if(!((1 << i) & j)) continue;
+            numbers[j] *= primes[i];
+            mobius[j] *= -1;
         }
-        if(n0 != 1) primes[P++] = n0;
     }
 
-    ull itr = search(k - 1) + 1;
-
-    while(c) {
-        if(gcd(itr, n) == 1) {
-            std::cout << itr << " ";
+    // for now on the function ile(i64) can be called
+    N = znajdz();
+    while(c > 0) {
+        if(gcd(N, n) == 1) {
+            cout << N << " ";
             c--;
         }
-        ++itr;
+        N++;
     }
-    std::cout << "\n";
-
-    /*std::cout << gcd(12, 20) << "\n"; // 4
-    std::cout << get_coprime(10) << "\n"; // 2
-    std::cout << get_coprime(12) << "\n"; // 3
-    std::cout << get_coprime(13) << "\n"; // 4
-    std::cout << get_coprime(30) << "\n"; // 8
-    std::cout << search(4 - 1) + 1 << "\n"; // 13
-    std::cout << search(5 - 1) + 1 << "\n"; // 17
-    std::cout << search(6 - 1) + 1 << "\n"; // 19
-    std::cout << search(7 - 1) + 1 << "\n"; // 23
-    std::cout << search(8 - 1) + 1 << "\n"; // 29*/
+    cout << "\n";
 
     return 0;
 }
