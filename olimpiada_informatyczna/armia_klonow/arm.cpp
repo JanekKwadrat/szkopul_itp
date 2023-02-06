@@ -1,68 +1,76 @@
- // Jan Zakrzewski
+/* Jan Zakrzewski
+   XXIX Olimpiada Informatyczna, Etap II
+   Zadanie `Armia klonów (arm)' */
 
-#include <iostream>
+#include <bits/stdc++.h>
+using namespace std;
 
-typedef long long int lli;
+typedef long long i64;
 
-inline lli min(lli x, lli y) {
-    return x < y ? x : y;
+constexpr i64 INF = 1e18 + 100;
+inline i64 Cap(i64 x) {
+    if(x > INF) return INF;
+    else return x;
 }
 
-const lli max_n = 1e6 + 20;
+inline i64 Mul(i64 x, i64 y) {
+    // for x, y in [0, INF] returns their product clamped to [0, INF]
+    if(y > (2 * INF) / x) return INF;
+    else return Cap(x * y);
+}
 
-lli n, a, b;
-lli best[max_n]; // how fast can you reach this number of bots
-lli answer;
+i64 Pow(i64 x, i64 k) {
+    // for x, k in [0, INF] returns the power clamped to [0, INF]
+    i64 ans = 1;
+    while(k > 0) {
+        if(k % 2 == 1) ans = Mul(ans, x);
+        x = Mul(x, x);
+        k /= 2;
+    }
+    return ans;
+}
+
+i64 n, a, b;
+
+// faktyczna odpowiedż na pewno nie przekracza 70 * (a + b) <= 1.4 * 10^11
+
+i64 najlepszy(i64 ile_a, i64 ile_b) {
+    // jaką największą liczebność armii można osiągnąć przeprowadzając odpowiednią liczbę każdej z operacji
+    // a in [1, 100], b in [0, 1e12)
+    i64 k1 = ile_b / ile_a;
+    i64 k2 = k1 + 1;
+    i64 C2 = ile_b % ile_a;
+    i64 C1 = ile_a - C2;
+
+    return Mul(Pow(k1 + 1, C1), Pow(k2 + 1, C2));
+}
+
+i64 phi(i64 ile_a) {
+    // zwraca najmniejsze ile_b takie, że najlepszy(ile_a, ile_b) > n
+    i64 p = 0, q = 1e12; // w każdym momencie prawdą jest, że najlepszy(ile_a, p) <= n < najlepszy(ile_b, q)
+    while(q - p > 1) {
+        i64 mid = (p + q) / 2;
+        if(najlepszy(ile_a, mid) <= n) p = mid;
+        else q = mid;
+    }
+    return q;
+}
+
+i64 rozwiaz() {
+    i64 odp = INF;
+    for(i64 ile_a = 1; ile_a <= 100; ++ile_a) {
+        i64 ile_b = phi(ile_a);
+        i64 nowa = Cap(Mul(a, ile_a) + Mul(b, ile_b));
+        odp = min(odp, nowa);
+    }
+    return odp;
+}
 
 int main() {
 
-    std::cin >> n >> a >> b;
-    a -= b;
+    cin >> n >> a >> b;
 
-    best[1] = 0;
-    for(lli i = 2; i <= n && i < max_n; ++i) best[i] = INT64_MAX;
-
-    for(lli itr = 1; itr < n && itr < max_n; ++itr) {
-        if(best[itr] == INT64_MAX) continue;
-        lli t = best[itr] + a + 2 * b;
-        lli k = 2;
-        lli jtr = itr * k;
-        while(1) {
-            if(jtr >= max_n) jtr = max_n - 1;
-            if(jtr > n) jtr = n;
-            best[jtr] = min(best[jtr], t);
-            if(jtr == n || jtr == max_n - 1) break;
-            t += b;
-            ++k;
-            jtr += itr;
-        }
-    }
-
-    if(n < max_n) std::cout << best[n] << "\n";
-    else {
-        answer = INT64_MAX;
-        lli k_min = a / b - 3;
-        lli k_max = a / b + 3;
-        if(k_min < 2) k_min = 2; 
-        if(k_max < 2) k_max = 2; 
-        for(lli itr = 1; itr < max_n; ++itr) {
-            //if(itr % 10000 == 0) std::cout << itr / 10000 << "\n";
-            if(best[itr] == INT64_MAX) continue;
-            for(lli k = k_min; k <= k_max; ++k) {
-                //std::cout << k << "\n";
-                lli t = best[itr];
-                lli dt = a + k * b;
-                lli nmb = 1;
-                while(nmb <= n) {
-                    //std::cout << nmb << "\n";
-                    t += dt;
-                    nmb *= k;
-                }
-                answer = min(answer, t);
-            }
-        }
-        std::cout << answer << "\n";
-    }
+    cout << rozwiaz() << "\n";
 
     return 0;
 }
