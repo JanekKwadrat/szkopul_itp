@@ -1,81 +1,129 @@
-// Jan Zakrzewski
+/* Jan Zakrzewski
+   XXIX Olimpiada Informatyczna, Etap II
+   Zadanie `Agenci (age)' */
 
-#include <iostream>
-#include <set>
+#include <bits/stdc++.h>
+using namespace std;
 
-const int max_n = 5e5 + 20;
+constexpr int N = 5e5 + 20;
+
+constexpr long long INF = 1e12;
 
 int n, k;
-bool agent[max_n]{};
-std::set<int> roadmap[max_n];
-bool seen[max_n]{};
-int ans;
+vector<int> neighbors[N];
+bool agent[N] = {};
 
-int degree[max_n]{};
-int max_deg = 0;
+int root;
+int parent[N];
+vector<int> children[N];
 
-inline int max(int x, int y) {return x > y ? x : y;}
-inline int min(int x, int y) {return x < y ? x : y;}
-int depth(int itr) {
-    if(seen[itr]) return 0;
-    seen[itr] = true;
-    int answer = 0;
-    for(auto oth : roadmap[itr]) {
-        if(agent[oth]) continue;
-        answer = max(answer, depth(oth));
-    }
-    return answer + 1;
-}
+long long answer[N];
+long long supply[N];
+long long consume[N];
+
+bool visited[N] = {};
+queue<int> my_queue;
+
+long long ans;
+long long L;
 
 int main() {
 
-    std::ios_base::sync_with_stdio(0);
-    std::cin.tie(0);
-    std::cout.tie(0);
+    ios_base::sync_with_stdio(0);
+    cin.tie(0), cout.tie(0);
 
-    std::cin >> n >> k;
-
-    for(int i = 0; i < k; ++i) {
-        int ag;
-        std::cin >> ag;
-        --ag;
-        agent[ag] = true;
+    cin >> n >> k;
+    for(int i = 1; i <= k; ++i) {
+        int u;
+        cin >> u;
+        agent[u] = true;
     }
-
-    for(int i = 1; i <= n - 1; ++i) {
+    for(int i = 1; i <= n-1; ++i) {
         int u, v;
-        std::cin >> u >> v;
-        --u, --v;
-        ++degree[u];
-        ++degree[v];
-        roadmap[u].insert(v);
-        roadmap[v].insert(u);
+        cin >> u >> v;
+        neighbors[u].push_back(v);
+        neighbors[v].push_back(u);
     }
 
-    for(int i = 0; i < n; ++i) max_deg = max(max_deg, degree[i]);
-    
-    if(max_deg >= 3 || k == 1) {
-
-        ans = 2 * (n - k);
-        for(int ag = 0; ag < n; ++ag) {
-            if(!agent[ag]) continue;
-            ans -= depth(ag) - 1;
+    root = 1;
+    my_queue.push(root);
+    while(my_queue.size() > 0) {
+        int u = my_queue.front();
+        my_queue.pop();
+        visited[u] = true;
+        for(int v : neighbors[u]) {
+            if(visited[v]) parent[u] = v;
+            else {
+                children[u].push_back(v);
+                my_queue.push(v);
+            }
         }
+    }
 
-    }
-    else {
-        ans = n - k;
-        int itr, jtr;
-        for(int i = 0; i < n; ++i) {
-            if(degree[i] > 1) continue;
-            itr = jtr;
-            jtr = i;
+    function<void(int)> Visit = [&](int u) {
+        for(int v : children[u]) Visit(v);
+        long long sum = 0;
+        for(int v : children[u]) sum += answer[v];
+        if(agent[u]) {
+            supply[u] = sum;
+            answer[u] = sum;
+            for(int v : children[u]) answer[u] = max(answer[u], sum + (consume[v] - answer[v] + 1));
+            consume[u] = -INF;
+        } else {
+            supply[u] = -INF;
+            for(int v : children[u]) supply[u] = max(supply[u], sum + (supply[v] - answer[v] + 1));
+            consume[u] = sum;
+            for(int v : children[u]) consume[u] = max(consume[u], sum + (consume[v] - answer[v] + 1));
+            
+            answer[u] = max(sum, supply[u]);
+            if(children[u].size() >= 2) {
+                int v1, w1;
+
+                v1 = -1;
+                for(int v : children[u]) {
+                    if(v1 == -1) v1 = v;
+                    else if(supply[v] - answer[v] + 1 > supply[v1] - answer[v1] + 1) v1 = v;
+                }
+                w1 = -1;
+                for(int w : children[u]) {
+                    if(w == v1) continue;
+                    if(w1 == -1) w1 = w;
+                    else if(consume[w] - answer[w] + 1 > consume[w1] - answer[w1] + 1) w1 = w;
+                }
+                answer[u] = max(answer[u], sum + (supply[v1] - answer[v1] + 1) + (consume[w1] - answer[w1] + 1));
+
+                w1 = -1;
+                for(int w : children[u]) {
+                    if(w1 == -1) w1 = w;
+                    else if(consume[w] - answer[w] + 1 > consume[w1] - answer[w1] + 1) w1 = w;
+                }
+                v1 = -1;
+                for(int v : children[u]) {
+                    if(v == w1) continue;
+                    if(v1 == -1) v1 = v;
+                    else if(supply[v] - answer[v] + 1 > supply[v1] - answer[v1] + 1) v1 = v;
+                }
+                answer[u] = max(answer[u], sum + (supply[v1] - answer[v1] + 1) + (consume[w1] - answer[w1] + 1));
+            }
+            
+            /*answer[u] = max(sum, supply[u]);
+            for(int v : children[u])
+                for(int w : children[u]) {
+                    if(v == w) continue;
+                    answer[u] = max(answer[u], sum + (supply[v] + consume[w] - answer[v] - answer[w] + 2));
+                }*/
         }
-        int sth = agent[itr] ? 0 : depth(itr);
-        int tth = agent[jtr] ? 0 : depth(jtr);
-        ans += min(sth, tth);
-    }
-    std::cout << ans << "\n";
+    };
+    Visit(root);
+
+    /*for(int u = 1; u <= n; ++u) cout << answer[u] << " "; cout << "\n";
+    for(int u = 1; u <= n; ++u) cout << supply[u] << " "; cout << "\n";
+    for(int u = 1; u <= n; ++u) cout << consume[u] << " "; cout << "\n";*/
+
+    L = answer[root];
+    ans = 2 * (n - k) - L;
+
+    cout << ans << "\n";
 
     return 0;
 }
