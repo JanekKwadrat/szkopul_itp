@@ -1,15 +1,17 @@
-/*  Jan Zakrzewski
-    XIX Olimpiada Informatyczna, Etap II
-    Zadanie `Bony (bon)' */
+/* Jan Zakrzewski
+   XIX Olimpiada Informatyczna, Etap II
+   Zadanie `Bony (bon)' */
 
 #include <bits/stdc++.h>
 using namespace std;
 
 constexpr int N = 1e6 + 20;
+constexpr int M = 1e6;
 int m, n;
-int a[N];
-bool candy[N] = {};
-bool taken[N] = {};
+bool candy[N];
+bool taken[N];
+int jump[N];
+long long S = 0;
 vector<long long> ans;
 
 int main() {
@@ -18,30 +20,44 @@ int main() {
     cin.tie(0), cout.tie(0);
 
     cin >> m;
+    for(int i = 1; i <= M; ++i) {
+        candy[i] = false;
+        taken[i] = false;
+    }
     for(int i = 1; i <= m; ++i) {
         int b;
         cin >> b;
         candy[b] = true;
     }
+
+    for(int x = 1; x <= M; ++x) jump[x] = x;
+
     cin >> n;
-    for(int i = 1; i <= n; ++i) cin >> a[i];
-
-    long long s = 0;
     for(int i = 1; i <= n; ++i) {
+        int a;
+        cin >> a;
 
-        int p = 0;
-        for(int j = 1; j <= a[i]; ++j) {
-            do p += a[i]; while(p < N && taken[p]);
-            if(p >= N) break;
-            if(candy[p]) ans.push_back(s + j);
-            taken[p] = true;
+        int j = jump[a];
+        int c = 0;
+        while(j <= M && c < a) {
+            if(!taken[j]) {
+                //cout << j << " ";
+                if(candy[j]) ans.push_back(S + c + 1);
+                taken[j] = true;
+                c++;
+            }
+            j += a;
         }
+        jump[a] = j;
 
-        s += a[i];
+        S += a;
     }
+    //cout << "\n";
 
+    sort(ans.begin(), ans.end());
     cout << ans.size() << "\n";
-    for(int x : ans) cout << x << "\n";
+    for(long long x : ans) cout << x << "\n";
+
 
     return 0;
 }
