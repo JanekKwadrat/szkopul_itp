@@ -1,322 +1,103 @@
-/* 
- * Zadanie: Rajd (XXI OI, etap drugi)
- * Jan Zakrzewski, rozwiazanie
- * 
- * Pomysly: przyporzadkowac kazdemu wierzcholkowi ile go poprzedza i ile jest po nim,
- * czyli jakas pare [a|b]. Najdluzsze trasy przechodza przez te wierzcholki, ze a+b jest najdluzsze (wierzcholki glowne).
- * Interesuja nas tylko te wierzcholki glowne, ze [a|b] jednoznacznie je okresla (wierzcholki ciekawe).
- * Trzeba znac dlugosc najlepszego objazdu danego ciekawego wiezcholka. Przez objazd ciekawego wierzcholka [a|b] rozumiemy trase z [0|a+b] do [a+b|0],
- * ktora jest krotsza niz a+b i nie przechodzi przez [a|b].
- * Jak policzyc ile jest objazdow danego skrzyzowania? Moze sprobowac przy liczeniu par ciekaych [a|b] liczyc druga najlepsza trase?
- * Chyba tak - dla kazdego pobocznego wierzcholka liczymy ile jest wierczholkow glownych przed nim i po nim. To pozwala stwierdzic do ktorych wierzcholkow
- * glownych jest on rownolegly, a zatem stanowi czesc objazdu. Pozniej trzeba dokonczyc robote drzewem przedzialowym.
- */
-
 #include <iostream>
-#include <set>
-#include <queue>
+#include <bits/stdc++.h>
+using namespace std;
 
-const int max_n = 5e5 + 20;
-const int plus = 512 * 1024;
+constexpr int N = 500'050;
+constexpr int None = -1'000'000;
 
 int n, m;
-
-std::set<int> roadmap_forward[max_n]; 
-std::set<int> roadmap_backward[max_n]; 
-
-int before[max_n]{};
-int after[max_n]{};
-
-int major_before[max_n];
-int major_after[max_n];
-
-int memory[10 * max_n];
-int mem_top = 0;
-
-int longest = 0;
-
-std::queue<int> think;
-
-inline int max(int x, int y) { return x > y ? x : y; }
-inline int min(int x, int y) { return x < y ? x : y; }
-
-int around[2 * plus]{};
-int lazy[plus]{};
-int access(int itr) {
-    itr += plus;
-    for(int shf = 20; shf >= 1; --shf) {
-        int the_itr = itr >> shf;
-        if(the_itr == 0) continue;
-
-        if(lazy[the_itr]) {
-            around[the_itr] = max(around[the_itr], lazy[the_itr]);
-            if(the_itr * 2 < plus) {
-                lazy[the_itr * 2] = max(lazy[the_itr * 2], lazy[the_itr]);
-                lazy[the_itr * 2 + 1] = max(lazy[the_itr * 2 + 1], lazy[the_itr]);
-            }
-            else {
-                around[the_itr * 2] = max(around[the_itr * 2], lazy[the_itr]);
-                around[the_itr * 2 + 1] = max(around[the_itr * 2 + 1], lazy[the_itr]);
-            }
-        }
-
-        lazy[the_itr] = 0;
-    }
-    return around[itr];
-}
-
-void range_update(int itr, int jtr, int val) {
-    access(itr);
-    access(jtr);
-
-    itr += plus;
-    jtr += plus;
-
-    while(itr / 2 != jtr / 2) {
-        around[itr] = max(around[itr], val);
-        around[jtr] = max(around[jtr], val);
-
-        if(itr % 2 == 0) {
-            if(itr < plus) lazy[itr + 1] = max(lazy[itr + 1], val);
-            else around[itr + 1] = max(around[itr + 1], val);
-        }
-        if(jtr % 2 == 1) {
-            if(jtr < plus) lazy[jtr - 1] = max(lazy[jtr - 1], val);
-            else around[jtr - 1] = max(around[jtr - 1], val);
-        }
-        itr /= 2;
-        jtr /= 2;
-    }
-    
-    around[itr] = max(around[itr], val);
-    around[jtr] = max(around[jtr], val);
-    itr /= 2;
-
-    while(itr){
-        around[itr] = max(around[itr], val);
-        itr /= 2;
-    }
-}
-
-int range_query(int itr, int jtr) {
-    access(itr);
-    access(jtr);
-
-    itr += plus;
-    jtr += plus;
-
-    int answer = max(around[itr], around[jtr]);
-
-    while(itr / 2 != jtr / 2) {
-        if(itr % 2 == 0) {
-            answer = max(answer, around[itr + 1]);
-            if(itr < plus) answer = max(answer, lazy[itr + 1]);
-        }
-        if(jtr % 2 == 1) {
-            answer = max(answer, around[jtr - 1]);
-            if(jtr < plus) answer = max(answer, lazy[jtr - 1]);
-        }
-
-        itr /= 2;
-        jtr /= 2;
-    }
-
-    return answer;
-}
+vector<int> neighbors_out[N];
+vector<int> neighbors_in[N];
+int longest_out[N];
+int longest_in[N];
+int L;
+int which[N];
+int maxima[N];
+int ans, val;
 
 int main() {
-    
-    std::ios_base::sync_with_stdio(0);
-    std::cin.tie(0);
-    std::cout.tie(0);
 
-    std::cin >> n >> m;
+    cin >> n >> m;
     for(int i = 0; i < m; ++i) {
         int u, v;
-        std::cin >> u >> v;
-        --u, --v;
-        roadmap_forward[u].insert(v);
-        roadmap_backward[v].insert(u);
+        cin >> u >> v;
+        neighbors_out[u].push_back(v);
+        neighbors_in[v].push_back(u);
     }
 
     {
-        int * incoming = &memory[mem_top];
-        mem_top += max_n;
+        fill(longest_out, longest_out + N, None);
+        fill(longest_in, longest_in + N, None);
 
-        for(int i = 0; i < n; ++i) {
-            incoming[i] = roadmap_backward[i].size();
-            if(incoming[i] == 0)
-                think.push(i);
-        }
-
-        while(!think.empty()) {
-            int itr = think.front();
-            think.pop();
-            for(auto jtr : roadmap_forward[itr]) {
-                before[jtr] = max(before[jtr], before[itr] + 1);
-                --incoming[jtr];
-                if(incoming[jtr] == 0)
-                    think.push(jtr);
+        function<int(int)> f_out = [&](int u)->int {
+            if(longest_out[u] == None) {
+                int ans = -1;
+                for(int v : neighbors_out[u]) {
+                    if(f_out(v) > ans) ans = f_out(v);
+                }
+                longest_out[u] = ans + 1;
             }
-        }
+            return longest_out[u];
+        };
+        function<int(int)> f_in = [&](int u)->int {
+            if(longest_in[u] == None) {
+                int ans = -1;
+                for(int v : neighbors_in[u]) {
+                    if(f_in(v) > ans) ans = f_in(v);
+                }
+                longest_in[u] = ans + 1;
+            }
+            return longest_in[u];
+        };
 
-        mem_top -= max_n;
+        for(int i = 1; i <= n; ++i) {
+            f_out(i);
+            f_in(i);
+        }
+    }
+    
+    L = 0;
+    for(int i = 1; i <= n; ++i) {
+        if(longest_in[i] + longest_out[i] > L) {
+            L = longest_in[i] + longest_out[i];
+        }
     }
 
-    {   
-        int * outgoing = &memory[mem_top];
-        mem_top += max_n;
-
-        for(int i = 0; i < n; ++i) {
-            outgoing[i] = roadmap_forward[i].size();
-            if(outgoing[i] == 0)
-                think.push(i);
-        }
-
-        while(!think.empty()) {
-            int itr = think.front();
-            think.pop();
-            for(auto jtr : roadmap_backward[itr]) {
-                after[jtr] = max(after[jtr], after[itr] + 1);
-                --outgoing[jtr];
-                if(outgoing[jtr] == 0)
-                    think.push(jtr);
-            }
-        }
-
-        mem_top -= max_n;
+    fill(which, which + N, None);
+    for(int i = 1; i <= n; ++i) {
+        for(int j = 0; j <= L; ++j) cout << which[j] << " "; cout << "\n";
+        if(longest_in[i] + longest_out[i] < L) continue;
+        if(which[longest_in[i]] != None) continue;
+        which[longest_in[i]] = i;
     }
 
-    for(int i = 0; i < n; ++i)
-        longest = max(longest, before[i] + after[i]);
-
-    {
-        int * incoming = &memory[mem_top];
-        mem_top += max_n;
-
-        for(int i = 0; i < n; ++i)
-            major_before[i] = 1e9;
-
-        for(int i = 0; i < n; ++i) {
-            incoming[i] = roadmap_backward[i].size();
-            if(incoming[i] == 0){
-                think.push(i);
-                if(before[i] + after[i] == longest)
-                    major_before[i] = 1;
-            }
-        }
-
-        while(!think.empty()) {
-            int itr = think.front();
-            think.pop();
-            for(auto jtr : roadmap_forward[itr]) {
-                int inc = before[jtr] + after[jtr] == longest;
-                major_before[jtr] = min(major_before[jtr], major_before[itr] + inc);
-                --incoming[jtr];
-                if(incoming[jtr] == 0)
-                    think.push(jtr);
-            }
-        }
-
-        mem_top -= max_n;
+    fill(maxima, maxima + N, 0);
+    for(int i = 1; i <= n; ++i) {
+        if(i == which[longest_in[i]]) {
+            maxima[longest_in[i]] = max(maxima[longest_in[i]], longest_in[i] - 1);
+            maxima[longest_in[i]] = max(maxima[longest_in[i]], longest_out[i] - 1);
+        } else maxima[longest_in[i]] = max(maxima[longest_in[i]], longest_in[i] + longest_out[i]);
     }
 
-    {
-        int * outgoing = &memory[mem_top];
-        mem_top += max_n;
-
-        for(int i = 0; i < n; ++i)
-            major_after[i] = 1e9;
-
-        for(int i = 0; i < n; ++i) {
-            outgoing[i] = roadmap_forward[i].size();
-            if(outgoing[i] == 0){
-                think.push(i);
-                if(before[i] + after[i] == longest)
-                    major_after[i] = 1;
-            }
+    val = 1'000'000'000;
+    for(int i = 0; i <= L; ++i) {
+        if(maxima[i] < val) {
+            ans = which[i];
+            val = maxima[i];
         }
-
-        while(!think.empty()) {
-            int itr = think.front();
-            think.pop();
-            for(auto jtr : roadmap_backward[itr]) {
-                int inc = before[jtr] + after[jtr] == longest;
-                major_after[jtr] = min(major_after[jtr], major_after[itr] + inc);
-                --outgoing[jtr];
-                if(outgoing[jtr] == 0)
-                    think.push(jtr);
-            }
-        }
-
-        mem_top -= max_n;
     }
 
-    {
-        for(int i = 0; i < n; ++i) {
-            if(before[i] + after[i] == longest) continue;
-            int itr = major_before[i] + 1;
-            int jtr = major_after[i] - 1;
-            range_update(itr, jtr, before[i] + after[i]);
-        }
-
-        int * count = &memory[mem_top];
-        mem_top += max_n + 20;
-
-        for(int i = 0; i < n; ++i) {
-            if(before[i] + after[i] != longest) continue;
-            ++count[before[i]];
-        }
-
-        int min_itr = 0;
-        int min_len = longest;
-
-        for(int i = 0; i < n; ++i) {
-            if(before[i] + after[i] != longest) continue;
-            if(count[before[i]] != 1) continue;
-            int maybe_len = max(max(access(before[i]), before[i] - 1), after[i] - 1);
-            if(maybe_len < min_len) min_itr = i;
-        }
-
-        std::cout << min_itr << " " << min_len << "\n";
-
-        mem_top -= max_n + 20;
+    for(int i = 1; i <= n; ++i) {
+        cout << i << ": " << longest_in[i] << " | " << longest_out[i] << "\n";
     }
 
-    /*range_update(1, 3, 2);
-    range_update(2, 4, 3);
-    range_update(0, 3, 1);
+    cout << L << "\n";
 
-    std::cout << access(0) << "\n";
-    std::cout << access(1) << "\n";
-    std::cout << access(2) << "\n";
-    std::cout << access(3) << "\n";
-    std::cout << access(4) << "\n";
-    std::cout << access(5) << "\n\n";
+    for(int i = 0; i <= L; ++i) {
+        cout << i << ": " << which[i] << " " << maxima[i] << "\n";
+    }
 
-    std::cout << range_query(1, 2) << "\n"; //3
-    std::cout << range_query(0, 1) << "\n"; //2
-    std::cout << range_query(3, 3) << "\n"; //3
-    std::cout << range_query(0, 0) << "\n"; //1
-    std::cout << range_query(3, 7) << "\n"; //3*/
-
-    /*around[plus] = 3;
-    around[plus + 1] = 6;
-    around[plus + 2] = 2;
-    lazy[plus / 2] = 5;
-    lazy[plus / 4] = 4;
-
-    std::cout << access(0) << "\n";
-    std::cout << access(1) << "\n";
-    std::cout << access(2) << "\n";*/
-
-    /*for(int i = 0; i < n; ++i)
-        std::cout << "[" << before[i] << "|" << after[i] << "] ";
-    std::cout << "\n";
-
-    for(int i = 0; i < n; ++i)
-        std::cout << "[" << major_before[i] << "|" << major_after[i] << "] ";
-    std::cout << "\n";*/
+   // cout << ans << " " << val << "\n";
 
     return 0;
 }
