@@ -9,10 +9,10 @@ constexpr int N = 500'000 + 100;
 int n, m;
 vector<int> ulica_fw[N];
 vector<int> ulica_bw[N];
-int pierwszy, ostatni;
+//int pierwszy, ostatni;
 
 vector<int> topologiczne; // tu będą posortowane topologicznie skrzyżowania
-bool visited[N];
+//bool visited[N];
 
 int najdalej_fw[N]; // jaka jest najdłuższa ścieżka zaczynająca się w danym wierzchołku (długość liczymy po liczbie krawędzi)
 int najdalej_bw[N]; // jaka jest najdłuższa ścieżka kończąca się w danym wierzchołku (długość liczymy po liczbie krawędzi)
@@ -22,6 +22,8 @@ int ile[N];
 
 multiset<int> Dobre; // tu będą wybrane krawędzie
 pair<int, int> odp;
+
+// spróbuję w jakiś sposób pozbyć się dodatkowych wierzchołków 'pierwszy' oraz 'ostatni', one mogą zwiększyć łączną liczbę krawędzi nawet dwa razy
 
 int main() {
 
@@ -36,7 +38,7 @@ int main() {
         ulica_bw[v].push_back(u);
     }
 
-    pierwszy = n + 1;
+    /*pierwszy = n + 1;
     ostatni = n + 2;
     for(int u = 1; u <= n; ++u) {
         ulica_fw[pierwszy].push_back(u);
@@ -44,7 +46,7 @@ int main() {
         ulica_fw[u].push_back(ostatni);
         ulica_bw[ostatni].push_back(u);
     }
-    n += 2;
+    n += 2;*/
 
     for(int u = 1; u <= n; ++u) {
         ile[u] = ulica_bw[u].size();
@@ -86,38 +88,40 @@ int main() {
         }
     }
 
+    for(int u = 1; u <= n; ++u) {
+        if(ulica_bw[u].size() == 0)
+            Dobre.insert(-najdalej_fw[u]);
+    }
+
     odp = make_pair(INT32_MAX, -1);
     for(int u : topologiczne) {
         int D;
         for(int v : ulica_bw[u]) {
             D = najdalej_bw[v] + najdalej_fw[u] + 1;
-            auto itr = Dobre.find(-D);
-            if(itr != Dobre.end()) Dobre.erase(itr);
+            Dobre.erase(Dobre.find(-D));
         }
-        if(u != pierwszy && u != ostatni) {
+        if(ulica_bw[u].size() == 0) Dobre.erase(Dobre.find(-najdalej_fw[u]));
+        
+        D = 0;
+        if(Dobre.size() > 0) D = - * Dobre.begin();
+        D = max(D, najdalej_fw[u] - 1);
+        D = max(D, najdalej_bw[u] - 1);
 
-            D = 0;
-            if(Dobre.size() > 0) D = - * Dobre.begin();
-
-            //cout << u << " " << D << "\n";
+        odp = min(odp, make_pair(D, u));
+        if(odp.first == 0) break;
             
-            D = max(D, najdalej_fw[u] - 1);
-            D = max(D, najdalej_bw[u] - 1);
-
-            odp = min(odp, make_pair(D, u));
-            if(odp.first == 2) break;
-        }
         for(int v : ulica_fw[u]) {
             D = najdalej_fw[v] + najdalej_bw[u] + 1;
             Dobre.insert(-D);
         }
+        if(ulica_fw[u].size() == 0) Dobre.insert(-najdalej_bw[u]);
     }
 
     //for(int u : topologiczne) cout << u << " "; cout << "\n";
     //for(int u : topologiczne) cout << najdalej_fw[u] << " "; cout << "\n";
     //for(int u : topologiczne) cout << najdalej_bw[u] << " "; cout << "\n";
 
-    cout << odp.second << " " << odp.first - 2 << "\n";
+    cout << odp.second << " " << odp.first << "\n";
 
     return 0;
 }
