@@ -86,17 +86,18 @@ int main() {
             auto itr = Dobre.find(-D);
             if(itr != Dobre.end()) Dobre.erase(itr);
         }
+        if(u != pierwszy && u != ostatni) {
 
-        D = 0;
-        if(Dobre.size() > 0) D = - * Dobre.begin();
+            D = 0;
+            if(Dobre.size() > 0) D = - * Dobre.begin();
 
-        //cout << u << " " << D << "\n";
-        
-        D = max(D, najdalej_fw[u] - 1);
-        D = max(D, najdalej_bw[u] - 1);
+            //cout << u << " " << D << "\n";
+            
+            D = max(D, najdalej_fw[u] - 1);
+            D = max(D, najdalej_bw[u] - 1);
 
-        odp = min(odp, make_pair(D, u));
-
+            odp = min(odp, make_pair(D, u));
+        }
         for(int v : ulica_fw[u]) {
             D = najdalej_fw[v] + najdalej_bw[u] + 1;
             Dobre.insert(-D);
