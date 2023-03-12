@@ -2,3 +2,7 @@
 !*.*
 !*/
 **/.vscode
+_in/
+_out/
+a.out
+*.exe
