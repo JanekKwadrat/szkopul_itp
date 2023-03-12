@@ -11,7 +11,7 @@ typedef unsigned int u32;
 typedef unsigned long long u64;
 constexpr int N = 200'050;
 constexpr u64 M = 4'294'967'291;
-constexpr u64 p = 200'009;
+constexpr u64 p = 200'003;
 
 int n;
 u32 A[N];
