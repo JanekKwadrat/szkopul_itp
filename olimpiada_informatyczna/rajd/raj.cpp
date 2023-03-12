@@ -17,6 +17,9 @@ bool visited[N];
 int najdalej_fw[N]; // jaka jest najdłuższa ścieżka zaczynająca się w danym wierzchołku (długość liczymy po liczbie krawędzi)
 int najdalej_bw[N]; // jaka jest najdłuższa ścieżka kończąca się w danym wierzchołku (długość liczymy po liczbie krawędzi)
 
+queue<int> Queue;
+int ile[N];
+
 multiset<int> Dobre; // tu będą wybrane krawędzie
 pair<int, int> odp;
 
@@ -43,40 +46,45 @@ int main() {
     }
     n += 2;
 
-    function<void(int)> Visit = [&](int u) {
-        if(visited[u]) return;
-        visited[u] = true;
+    for(int u = 1; u <= n; ++u) {
+        ile[u] = ulica_bw[u].size();
+        if(ile[u] == 0) Queue.push(u);
+    }
+    while(Queue.size() > 0) {
+        int u = Queue.front();
+        Queue.pop();
 
-        for(int v : ulica_fw[u]) Visit(v);
         topologiczne.push_back(u);
-    };
-    fill(visited + 1, visited + n + 1, false);
-    for(int u = 1; u <= n; ++u) Visit(u);
-    reverse(topologiczne.begin(), topologiczne.end());
-
-    //for(int u : topologiczne) cout << u << " "; cout << "\n";
-
-    function<void(int)> Licz_fw = [&](int u) {
-        if(najdalej_fw[u] != -1) return;
-        najdalej_fw[u] = 0;
         for(int v : ulica_fw[u]) {
-            Licz_fw(v);
-            najdalej_fw[u] = max(najdalej_fw[u], najdalej_fw[v] + 1);
+            ile[v]--;
+            if(ile[v] == 0) Queue.push(v);
         }
-    };
-    fill(najdalej_fw + 1, najdalej_fw + n + 1, -1);
-    for(int u = 1; u <= n; ++u) Licz_fw(u);
 
-    function<void(int)> Licz_bw = [&](int u) {
-        if(najdalej_bw[u] != -1) return;
         najdalej_bw[u] = 0;
         for(int v : ulica_bw[u]) {
-            Licz_bw(v);
             najdalej_bw[u] = max(najdalej_bw[u], najdalej_bw[v] + 1);
         }
-    };
-    fill(najdalej_bw + 1, najdalej_bw + n + 1, -1);
-    for(int u = 1; u <= n; ++u) Licz_bw(u);
+    }
+    
+    //for(int u : topologiczne) cout << u << " "; cout << "\n";
+    
+    for(int u = 1; u <= n; ++u) {
+        ile[u] = ulica_fw[u].size();
+        if(ile[u] == 0) Queue.push(u);
+    }
+    while(Queue.size() > 0) {
+        int u = Queue.front();
+        Queue.pop();
+        
+        najdalej_fw[u] = 0;
+        for(int v : ulica_fw[u]) {
+            najdalej_fw[u] = max(najdalej_fw[u], najdalej_fw[v] + 1);
+        }
+        for(int v : ulica_bw[u]) {
+            ile[v]--;
+            if(ile[v] == 0) Queue.push(v);
+        }
+    }
 
     odp = make_pair(INT32_MAX, -1);
     for(int u : topologiczne) {
@@ -97,6 +105,7 @@ int main() {
             D = max(D, najdalej_bw[u] - 1);
 
             odp = min(odp, make_pair(D, u));
+            if(odp.first == 2) break;
         }
         for(int v : ulica_fw[u]) {
             D = najdalej_fw[v] + najdalej_bw[u] + 1;
